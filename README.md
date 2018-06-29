@@ -1,6 +1,8 @@
 # PlayerIOClient.Fluent
 Fluently build PlayerIOClient code, and write less of it.
 
+`PM> Package-Install PlayerIOClient.Fluent`
+
 Example project:
 
 	using System;
