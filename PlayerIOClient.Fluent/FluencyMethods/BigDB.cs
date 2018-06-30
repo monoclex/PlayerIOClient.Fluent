@@ -1,8 +1,5 @@
 ﻿namespace PlayerIOClient.Fluent {
 	public static class FluentBigDBFluency {
-		public static FluentBigDBWrapper ApplyFluency(this BigDB db)
-			=> new FluentBigDBWrapper(db);
-
 		public static FluentBigDBWrapper CreateObject(this FluentBigDBWrapper db, string table, string key, DatabaseObject obj, out DatabaseObject dbo) {
 			dbo = db.BigDB.CreateObject(table, key, obj); return db;
 		}

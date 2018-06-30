@@ -4,6 +4,16 @@ using System.Collections.Generic;
 namespace PlayerIOClient.Fluent {
 	public class FluentConnectionWrapper : IChild<FluentMultiplayerWrapper> {
 		public FluentConnectionWrapper(FluentMultiplayerWrapper fmw, Connection con, ConnectionArguments cargs) {
+			this._fmw = fmw;
+			Constructor(con, cargs);
+		}
+
+		public FluentConnectionWrapper(Connection con, ConnectionArguments cargs) {
+			this._fmw = null;
+			Constructor(con, cargs);
+		}
+
+		private void Constructor(Connection con, ConnectionArguments cargs) {
 			this._messageCallbacks = new Dictionary<string, List<Action<FluentConnectionWrapper, Message>>>();
 			this._disconnectCallbacks = new List<Action<FluentConnectionWrapper, DisconnectionType, string>>();
 			this._beforeSend = new List<Func<FluentConnectionWrapper, Message, Message>>();
@@ -12,7 +22,6 @@ namespace PlayerIOClient.Fluent {
 			this._discon = DisconnectionType.Unexplained;
 
 			this._cargs = cargs;
-			this._fmw = fmw;
 			this._con = con;
 			AddHooks();
 		}
