@@ -5,9 +5,9 @@ namespace PlayerIOClient.Fluent {
 	public class FluentConnectionWrapper : IChild<FluentMultiplayerWrapper> {
 		public FluentConnectionWrapper(FluentMultiplayerWrapper fmw, Connection con, ConnectionArguments cargs) {
 			this._messageCallbacks = new Dictionary<string, List<Action<FluentConnectionWrapper, Message>>>();
-			this._disconnectCallbacks = new List<Action<FluentConnectionWrapper, bool, string>>();
+			this._disconnectCallbacks = new List<Action<FluentConnectionWrapper, DisconnectionType, string>>();
 
-			this._discon = false;
+			this._discon = DisconnectionType.Unexplained;
 
 			this._cargs = cargs;
 			this._fmw = fmw;
@@ -16,11 +16,11 @@ namespace PlayerIOClient.Fluent {
 		}
 
 		private Dictionary<string, List<Action<FluentConnectionWrapper, Message>>> _messageCallbacks;
-		private List<Action<FluentConnectionWrapper, bool, string>> _disconnectCallbacks;
+		private List<Action<FluentConnectionWrapper, DisconnectionType, string>> _disconnectCallbacks;
 		private ConnectionArguments _cargs;
 		private Connection _con;
 		private FluentMultiplayerWrapper _fmw;
-		private bool _discon; // if we're disconnecting on purpose
+		private DisconnectionType _discon; // if we're disconnecting on purpose
 
 		public FluentMultiplayerWrapper Parent => this._fmw ?? throw new Exception("No parent found! Did you try to apply fluency to a connection?");
 		public ConnectionArguments ConnectionArguments => this._cargs;
@@ -35,7 +35,7 @@ namespace PlayerIOClient.Fluent {
 			else this._messageCallbacks[type] = new List<Action<FluentConnectionWrapper, Message>> { callback };
 		}
 
-		public void AttatchOnDisconnect(Action<FluentConnectionWrapper, bool, string> callback)
+		public void AttatchOnDisconnect(Action<FluentConnectionWrapper, DisconnectionType, string> callback)
 			=> this._disconnectCallbacks.Add(callback);
 
 		public void SendMessage(string type, params object[] args)
@@ -45,13 +45,17 @@ namespace PlayerIOClient.Fluent {
 			=> this._con.Send(msg ?? throw new ArgumentException(nameof(msg)));
 
 		public void EndConnection() {
-			this._discon = true;
-			if(this._con != null)
+			if (this._discon == DisconnectionType.Unexplained) //if it's unexplained, set it to 'disconnect'
+				this._discon = DisconnectionType.Disconnect;
+
+			if (this._con != null)
 				this._con.Disconnect();
-			this._discon = false;
+
+			this._discon = DisconnectionType.Unexplained; //set it back to 'unexplained'
 		}
 
 		public void ResetConnection(ConnectionArguments cargs) {
+			this._discon = DisconnectionType.Reconnect; //set the disconnection type
 			this.EndConnection();
 			
 			this._con = cargs.Join(this.Parent.Multiplayer);
@@ -71,8 +75,19 @@ namespace PlayerIOClient.Fluent {
 
 			this._con.OnDisconnect += (sender, e) => {
 				foreach (var i in this._disconnectCallbacks)
-					i(this, !this._discon, e);
+					i(this, this._discon, e);
 			};
 		}
+	}
+
+	public enum DisconnectionType {
+		/// <summary>The connection was disconnected on purpose - the .Disconnect() function was called</summary>
+		Disconnect,
+
+		/// <summary>The connection was disconnected on purpose - the .Reconnect() function was called</summary
+		Reconnect,
+
+		/// <summary>PlayerIO must've kicked us from the server, as we do not know why.</summary>
+		Unexplained
 	}
 }

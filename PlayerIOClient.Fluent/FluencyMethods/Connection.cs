@@ -2,7 +2,7 @@
 
 namespace PlayerIOClient.Fluent {
 	public static class FluentConnectionFluency {
-		public static FluentConnectionWrapper OnDisconnect(this FluentConnectionWrapper m, Action<FluentConnectionWrapper, bool, string> callback) {
+		public static FluentConnectionWrapper OnDisconnect(this FluentConnectionWrapper m, Action<FluentConnectionWrapper, DisconnectionType, string> callback) {
 			m.AttatchOnDisconnect(callback); return m;
 		}
 

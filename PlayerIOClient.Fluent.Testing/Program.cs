@@ -15,9 +15,13 @@ namespace PlayerIOClient.Fluent.Testing {
 				.Multiplayer
 					.CreateJoinRoom(connectUserId + "_aAaA", "Lobby" + dbo["version"], false, null, null)
 						.OnDisconnect((c, i, e) => {
-							if (i) {
+							if (i == DisconnectionType.Unexplained) {
 								Console.WriteLine($"Disconnected for no reason from the lobby: {e}");
-								c.Reconnect();
+								c
+									.Reconnect()
+									.Send("init");
+							} else {
+								Console.WriteLine($"Purposely disconnected");
 							}
 						})
 
@@ -40,18 +44,23 @@ namespace PlayerIOClient.Fluent.Testing {
 
 					.CreateJoinRoom("PW", "Everybodyedits" + dbo["version"], false, null, null)
 						.OnDisconnect((c, i, e) => {
-							if (!i) {
+							if (i == DisconnectionType.Unexplained) {
 								Console.WriteLine($"Disconnected for no reason: {e}");
 								c.Reconnect();
+							} else {
+								Console.WriteLine($"Purposely disconnected");
 							}
 						})
 
 						.On("init2", (c, e) => {
-							c.Send("say", "hellolo!");
+							c
+								.Send("say", "hellolo!")
+								.Disconnect();
 						})
 
 						.On("init", (c, e) => {
-							c.Send("init2");
+							c
+								.Send("init2");
 						})
 
 						.On("say", (c, e) => {
