@@ -18,7 +18,7 @@ namespace PlayerIOClient.Fluent {
 		}
 
 		private void Constructor(Connection con, ConnectionArguments cargs) {
-			this._messageCallbacks = new Dictionary<string, List<Action<FluentConnectionWrapper, Message>>>();
+			this._messageCallbacks = new Dictionary<string, Action<FluentConnectionWrapper, Message>>();
 
 			this._discon = DisconnectionType.Unexplained;
 
@@ -27,7 +27,7 @@ namespace PlayerIOClient.Fluent {
 			AddHooks();
 		}
 
-		private Dictionary<string, List<Action<FluentConnectionWrapper, Message>>> _messageCallbacks;
+		private Dictionary<string, Action<FluentConnectionWrapper, Message>> _messageCallbacks;
 		private ConnectionArguments _cargs;
 		private Connection _con;
 		private FluentMultiplayerWrapper _fmw;
@@ -46,8 +46,8 @@ namespace PlayerIOClient.Fluent {
 
 		public void AttatchOnMessage(string type, Action<FluentConnectionWrapper, Message> callback) {
 			if (this._messageCallbacks.TryGetValue(type, out var callbacks))
-				callbacks.Add(callback ?? throw new ArgumentNullException(nameof(callback)));
-			else this._messageCallbacks[type] = new List<Action<FluentConnectionWrapper, Message>> { callback ?? throw new ArgumentNullException(nameof(callback)) };
+				callbacks += (callback ?? throw new ArgumentNullException(nameof(callback)));
+			else this._messageCallbacks[type] = callback ?? throw new ArgumentNullException(nameof(callback));
 		}
 
 		public void AttatchOnDisconnect(DisconnectCallback callback)
@@ -92,17 +92,14 @@ namespace PlayerIOClient.Fluent {
 		internal void AddHooks() {
 			this._con.OnMessage += (sender, e) => {
 				if (this._messageCallbacks.TryGetValue("*", out var allCallbacks))
-					foreach (var i in allCallbacks)
-						i(this, e);
+					allCallbacks(this, e);
 
 				bool foundCallback = this._messageCallbacks.TryGetValue(e.Type, out var msgCallbacks);
 
 				if (foundCallback)
-					foreach (var i in msgCallbacks)
-						i(this, e);
+					msgCallbacks(this, e);
 				else if (this._messageCallbacks.TryGetValue("#", out var unhandledCallbacks))
-					foreach (var i in unhandledCallbacks)
-						i(this, e);
+					unhandledCallbacks(this, e);
 			};
 
 			this._con.OnDisconnect += (sender, e) => {
