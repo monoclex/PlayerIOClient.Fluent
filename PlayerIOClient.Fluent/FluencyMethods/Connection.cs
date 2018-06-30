@@ -6,7 +6,7 @@ namespace PlayerIOClient.Fluent {
 			m.AttatchOnMessage(type, callback); return m;
 		}
 
-		public static FluentConnectionWrapper OnDisconnect(this FluentConnectionWrapper m, Action<FluentConnectionWrapper, DisconnectionType, string> callback) {
+		public static FluentConnectionWrapper OnDisconnect(this FluentConnectionWrapper m, DisconnectCallback callback) {
 			m.AttatchOnDisconnect(callback); return m;
 		}
 
@@ -30,11 +30,11 @@ namespace PlayerIOClient.Fluent {
 			m.ResetConnection(cargs); return m;
 		}
 
-		public static FluentConnectionWrapper BeforeSend(this FluentConnectionWrapper m, Func<FluentConnectionWrapper, Message, Message> callback) {
+		public static FluentConnectionWrapper BeforeSend(this FluentConnectionWrapper m, BeforeSend callback) {
 			m.AttatchBeforeSend(callback); return m;
 		}
 
-		public static FluentConnectionWrapper AfterSend(this FluentConnectionWrapper m, Action<FluentConnectionWrapper, Message> callback) {
+		public static FluentConnectionWrapper AfterSend(this FluentConnectionWrapper m, AfterSend callback) {
 			m.AttatchAfterSend(callback); return m;
 		}
 	}

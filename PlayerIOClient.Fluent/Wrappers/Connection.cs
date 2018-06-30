@@ -2,6 +2,10 @@
 using System.Collections.Generic;
 
 namespace PlayerIOClient.Fluent {
+	public delegate void DisconnectCallback(FluentConnectionWrapper cc, DisconnectionType disconnectionType, string errorMessage);
+	public delegate Message BeforeSend(FluentConnectionWrapper cc, Message message);
+	public delegate void AfterSend(FluentConnectionWrapper cc, Message message);
+
 	public class FluentConnectionWrapper : IChild<FluentMultiplayerWrapper> {
 		public FluentConnectionWrapper(FluentMultiplayerWrapper fmw, Connection con, ConnectionArguments cargs) {
 			this._fmw = fmw;
@@ -15,9 +19,6 @@ namespace PlayerIOClient.Fluent {
 
 		private void Constructor(Connection con, ConnectionArguments cargs) {
 			this._messageCallbacks = new Dictionary<string, List<Action<FluentConnectionWrapper, Message>>>();
-			this._disconnectCallbacks = new List<Action<FluentConnectionWrapper, DisconnectionType, string>>();
-			this._beforeSend = new List<Func<FluentConnectionWrapper, Message, Message>>();
-			this._afterSend = new List<Action<FluentConnectionWrapper, Message>>();
 
 			this._discon = DisconnectionType.Unexplained;
 
@@ -27,9 +28,6 @@ namespace PlayerIOClient.Fluent {
 		}
 
 		private Dictionary<string, List<Action<FluentConnectionWrapper, Message>>> _messageCallbacks;
-		private List<Action<FluentConnectionWrapper, DisconnectionType, string>> _disconnectCallbacks;
-		private List<Func<FluentConnectionWrapper, Message, Message>> _beforeSend;
-		private List<Action<FluentConnectionWrapper, Message>> _afterSend;
 		private ConnectionArguments _cargs;
 		private Connection _con;
 		private FluentMultiplayerWrapper _fmw;
@@ -42,34 +40,35 @@ namespace PlayerIOClient.Fluent {
 		public bool Connected => this._con.Connected;
 		public string ConnectUserId => this.Parent.Parent.ConnectUserId;
 
+		public event DisconnectCallback DisconnectionCallback;
+		public event BeforeSend BeforeSendCallback;
+		public event AfterSend AfterSendCallback;
+
 		public void AttatchOnMessage(string type, Action<FluentConnectionWrapper, Message> callback) {
 			if (this._messageCallbacks.TryGetValue(type, out var callbacks))
 				callbacks.Add(callback ?? throw new ArgumentNullException(nameof(callback)));
 			else this._messageCallbacks[type] = new List<Action<FluentConnectionWrapper, Message>> { callback ?? throw new ArgumentNullException(nameof(callback)) };
 		}
 
-		public void AttatchOnDisconnect(Action<FluentConnectionWrapper, DisconnectionType, string> callback)
-			=> this._disconnectCallbacks.Add(callback ?? throw new ArgumentNullException(nameof(callback)));
+		public void AttatchOnDisconnect(DisconnectCallback callback)
+			=> this.DisconnectionCallback += (callback ?? throw new ArgumentNullException(nameof(callback)));
 
-		public void AttatchBeforeSend(Func<FluentConnectionWrapper, Message, Message> callback)
-			=> this._beforeSend.Add(callback ?? throw new ArgumentNullException(nameof(callback)));
+		public void AttatchBeforeSend(BeforeSend callback)
+			=> this.BeforeSendCallback += (callback ?? throw new ArgumentNullException(nameof(callback)));
 
-		public void AttatchAfterSend(Action<FluentConnectionWrapper, Message> callback)
-			=> this._afterSend.Add(callback ?? throw new ArgumentNullException(nameof(callback)));
+		public void AttatchAfterSend(AfterSend callback)
+			=> this.AfterSendCallback += (callback ?? throw new ArgumentNullException(nameof(callback)));
 
 		public void SendMessage(string type, params object[] args)
 			=> this.SendMessage(Message.Create(type ?? throw new ArgumentNullException(nameof(type)), args ?? throw new ArgumentNullException(nameof(args))));
 
 		public void SendMessage(Message msg) {
-			if (this._beforeSend.Count > 0)
-				foreach (var i in this._beforeSend)
-					msg = i(this, msg ?? throw new ArgumentException(nameof(msg)));
+			if(this.BeforeSendCallback != null)
+				msg = this.BeforeSendCallback.Invoke(this, msg ?? throw new ArgumentException(nameof(msg)));
 
 			this._con.Send(msg ?? throw new ArgumentException(nameof(msg)));
 
-			if (this._afterSend.Count > 0)
-				foreach (var i in this._afterSend)
-					i(this, msg);
+			this.AfterSendCallback?.Invoke(this, msg);
 		}
 
 		public void EndConnection() {
@@ -107,8 +106,7 @@ namespace PlayerIOClient.Fluent {
 			};
 
 			this._con.OnDisconnect += (sender, e) => {
-				foreach (var i in this._disconnectCallbacks)
-					i(this, this._discon, e);
+				this.DisconnectionCallback?.Invoke(this, this._discon, e);
 			};
 		}
 	}
