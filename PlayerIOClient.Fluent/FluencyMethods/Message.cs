@@ -93,5 +93,18 @@
 		public static Message Get(this Message msg, uint index, out ulong value) {
 			value = msg.GetULong(index); return msg;
 		}
+
+		public static Message Modify(this Message msg, uint index, object value) {
+			var msgCopy = Message.Create(msg.Type);
+
+			for (var i = 0u; i < msg.Count; i++)
+				if (i == index)
+					msgCopy.AddArg(value);
+				else msgCopy.AddArg(msg[i]);
+
+			msg = msgCopy;
+
+			return msgCopy;
+		}
 	}
 }

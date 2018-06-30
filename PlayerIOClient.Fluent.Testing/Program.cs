@@ -43,6 +43,19 @@ namespace PlayerIOClient.Fluent.Testing {
 						.Previous()
 
 					.CreateJoinRoom("PW", "Everybodyedits" + dbo["version"], false, null, null)
+						.BeforeSend((c, m) => {
+							if (m.Type == "say")
+								m = m.Modify(0, "goodbyte!!");
+
+							Console.WriteLine($"Sending {m.ToString()}");
+
+							return m;
+						})
+
+						.AfterSend((c, m) => {
+							Console.WriteLine($"Sent {m.ToString()}");
+						})
+
 						.OnDisconnect((c, i, e) => {
 							if (i == DisconnectionType.Unexplained) {
 								Console.WriteLine($"Disconnected for no reason: {e}");

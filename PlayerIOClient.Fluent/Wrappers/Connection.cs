@@ -6,6 +6,8 @@ namespace PlayerIOClient.Fluent {
 		public FluentConnectionWrapper(FluentMultiplayerWrapper fmw, Connection con, ConnectionArguments cargs) {
 			this._messageCallbacks = new Dictionary<string, List<Action<FluentConnectionWrapper, Message>>>();
 			this._disconnectCallbacks = new List<Action<FluentConnectionWrapper, DisconnectionType, string>>();
+			this._beforeSend = new List<Func<FluentConnectionWrapper, Message, Message>>();
+			this._afterSend = new List<Action<FluentConnectionWrapper, Message>>();
 
 			this._discon = DisconnectionType.Unexplained;
 
@@ -17,6 +19,8 @@ namespace PlayerIOClient.Fluent {
 
 		private Dictionary<string, List<Action<FluentConnectionWrapper, Message>>> _messageCallbacks;
 		private List<Action<FluentConnectionWrapper, DisconnectionType, string>> _disconnectCallbacks;
+		private List<Func<FluentConnectionWrapper, Message, Message>> _beforeSend;
+		private List<Action<FluentConnectionWrapper, Message>> _afterSend;
 		private ConnectionArguments _cargs;
 		private Connection _con;
 		private FluentMultiplayerWrapper _fmw;
@@ -31,18 +35,33 @@ namespace PlayerIOClient.Fluent {
 
 		public void AttatchOnMessage(string type, Action<FluentConnectionWrapper, Message> callback) {
 			if (this._messageCallbacks.TryGetValue(type, out var callbacks))
-				callbacks.Add(callback);
-			else this._messageCallbacks[type] = new List<Action<FluentConnectionWrapper, Message>> { callback };
+				callbacks.Add(callback ?? throw new ArgumentNullException(nameof(callback)));
+			else this._messageCallbacks[type] = new List<Action<FluentConnectionWrapper, Message>> { callback ?? throw new ArgumentNullException(nameof(callback)) };
 		}
 
 		public void AttatchOnDisconnect(Action<FluentConnectionWrapper, DisconnectionType, string> callback)
-			=> this._disconnectCallbacks.Add(callback);
+			=> this._disconnectCallbacks.Add(callback ?? throw new ArgumentNullException(nameof(callback)));
+
+		public void AttatchBeforeSend(Func<FluentConnectionWrapper, Message, Message> callback)
+			=> this._beforeSend.Add(callback ?? throw new ArgumentNullException(nameof(callback)));
+
+		public void AttatchAfterSend(Action<FluentConnectionWrapper, Message> callback)
+			=> this._afterSend.Add(callback ?? throw new ArgumentNullException(nameof(callback)));
 
 		public void SendMessage(string type, params object[] args)
-			=> this._con.Send(type ?? throw new ArgumentNullException(nameof(type)), args ?? throw new ArgumentNullException(nameof(args)));
+			=> this.SendMessage(Message.Create(type ?? throw new ArgumentNullException(nameof(type)), args ?? throw new ArgumentNullException(nameof(args))));
 
-		public void SendMessage(Message msg)
-			=> this._con.Send(msg ?? throw new ArgumentException(nameof(msg)));
+		public void SendMessage(Message msg) {
+			if (this._beforeSend.Count > 0)
+				foreach (var i in this._beforeSend)
+					msg = i(this, msg ?? throw new ArgumentException(nameof(msg)));
+
+			this._con.Send(msg ?? throw new ArgumentException(nameof(msg)));
+
+			if (this._afterSend.Count > 0)
+				foreach (var i in this._afterSend)
+					i(this, msg);
+		}
 
 		public void EndConnection() {
 			if (this._discon == DisconnectionType.Unexplained) //if it's unexplained, set it to 'disconnect'
