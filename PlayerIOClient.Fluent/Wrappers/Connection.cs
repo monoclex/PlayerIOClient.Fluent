@@ -68,8 +68,13 @@ namespace PlayerIOClient.Fluent {
 					foreach (var i in allCallbacks)
 						i(this, e);
 
-				if (this._messageCallbacks.TryGetValue(e.Type, out var msgCallbacks))
+				bool foundCallback = this._messageCallbacks.TryGetValue(e.Type, out var msgCallbacks);
+
+				if (foundCallback)
 					foreach (var i in msgCallbacks)
+						i(this, e);
+				else if (this._messageCallbacks.TryGetValue("#", out var unhandledCallbacks))
+					foreach (var i in unhandledCallbacks)
 						i(this, e);
 			};
 
