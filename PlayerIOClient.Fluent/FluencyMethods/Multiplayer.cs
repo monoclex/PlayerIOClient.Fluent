@@ -7,5 +7,9 @@ namespace PlayerIOClient.Fluent {
 
 		public static FluentConnectionWrapper JoinRoom(this FluentMultiplayerWrapper m, string roomId, Dictionary<string, string> joinData)
 			=> new FluentConnectionWrapper(m, m.Multiplayer.JoinRoom(roomId, joinData), new ConnectionArguments(roomId, joinData));
+
+		public static FluentMultiplayerWrapper ListRooms(this FluentMultiplayerWrapper m, string roomType, Dictionary<string, string> searchCriteria, int resultLimit, int resultOffset, out RoomInfo[] roomInfo) {
+			roomInfo = m.Multiplayer.ListRooms(roomType, searchCriteria, resultLimit, resultOffset); return m;
+		}
 	}
 }
