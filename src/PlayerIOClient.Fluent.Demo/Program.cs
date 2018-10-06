@@ -1,11 +1,14 @@
 ﻿using System;
 
-namespace PlayerIOClient.Fluent.Testing {
-	class Program {
-		static void Main(string[] args) {
+namespace PlayerIOClient.Fluent.Demo
+{
+	class Program
+	{
+		static void Main(string[] args)
+		{
 			var bot = PlayerIO.QuickConnect.SimpleConnect("everybody-edits-su9rn58o40itdbnw69plyw", "email", "password", null)
 				.ApplyFluency() //make the client fluent
-				
+
 				.BigDB
 					.Load("config", "config", out var dbo)
 					.Previous()
@@ -15,12 +18,15 @@ namespace PlayerIOClient.Fluent.Testing {
 				.Multiplayer
 					.CreateJoinRoom(connectUserId + "_aAaA", "Lobby" + dbo["version"], false, null, null)
 						.OnDisconnect((c, i, e) => {
-							if (i == DisconnectionType.Unexplained) {
+							if (i == DisconnectionType.Unexplained)
+							{
 								Console.WriteLine($"Disconnected for no reason from the lobby: {e}");
 								c
 									.Reconnect()
 									.Send("init");
-							} else {
+							}
+							else
+							{
 								Console.WriteLine($"Purposely disconnected");
 							}
 						})
@@ -57,10 +63,13 @@ namespace PlayerIOClient.Fluent.Testing {
 						})
 
 						.OnDisconnect((c, i, e) => {
-							if (i == DisconnectionType.Unexplained) {
+							if (i == DisconnectionType.Unexplained)
+							{
 								Console.WriteLine($"Disconnected for no reason: {e}");
 								c.Reconnect();
-							} else {
+							}
+							else
+							{
 								Console.WriteLine($"Purposely disconnected");
 							}
 						})

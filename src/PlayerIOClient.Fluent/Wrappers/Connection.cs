@@ -110,12 +110,12 @@ namespace PlayerIOClient.Fluent {
 
 	public enum DisconnectionType {
 		/// <summary>The connection was disconnected on purpose - the .Disconnect() function was called</summary>
-		Disconnect,
+		Disconnect = 0b001,
 
 		/// <summary>The connection was disconnected on purpose - the .Reconnect() function was called</summary
-		Reconnect,
+		Reconnect = 0b010,
 
 		/// <summary>PlayerIO must've kicked us from the server, as we do not know why.</summary>
-		Unexplained
+		Unexplained = 0b100
 	}
 }
